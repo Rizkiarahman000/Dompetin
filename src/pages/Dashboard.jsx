@@ -10,7 +10,8 @@ import {
 } from 'lucide-react'
 import TransactionRow from '../components/TransactionRow'
 import EmptyState from '../components/EmptyState'
-import { findCategory } from '../utils/categories'
+import ExpenseChart from '../components/ExpenseChart'
+import { useCategories } from '../context/CategoriesContext'
 import { formatRupiah, formatCompact, monthLabel } from '../utils/format'
 
 function greeting() {
@@ -22,6 +23,8 @@ function greeting() {
 }
 
 export default function Dashboard({ transactions, stats, onNavigate, onAdd }) {
+  const { resolve } = useCategories()
+
   const recent = useMemo(
     () =>
       [...transactions]
@@ -32,11 +35,11 @@ export default function Dashboard({ transactions, stats, onNavigate, onAdd }) {
 
   const breakdown = useMemo(() => {
     const entries = Object.entries(stats.byCategory)
-      .map(([id, amount]) => ({ ...findCategory('expense', id), amount }))
+      .map(([id, amount]) => ({ ...resolve('expense', id), amount }))
       .sort((a, b) => b.amount - a.amount)
     const total = entries.reduce((sum, e) => sum + e.amount, 0)
     return { entries, total }
-  }, [stats.byCategory])
+  }, [stats.byCategory, resolve])
 
   return (
     <div className="page">
@@ -90,16 +93,9 @@ export default function Dashboard({ transactions, stats, onNavigate, onAdd }) {
             <strong>{formatRupiah(stats.monthExpense)}</strong>
           </div>
         </article>
-        <article className="stat-card">
-          <span className="stat-ico stat-ico--neutral">
-            <Wallet size={18} />
-          </span>
-          <div>
-            <span className="stat-label">Total transaksi</span>
-            <strong>{stats.count} catatan</strong>
-          </div>
-        </article>
       </section>
+
+      <ExpenseChart transactions={transactions} />
 
       <div className="cols">
         <section className="panel">

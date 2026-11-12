@@ -14,10 +14,12 @@ praktikum: **React + Vite + vite-plugin-pwa + Supabase**.
 ## ✨ Fitur
 
 - **3 halaman yang dapat dinavigasi** (tab atas di desktop, tab bawah di mobile):
-  - **Beranda** — saldo, ringkasan pemasukan/pengeluaran bulan ini, transaksi terbaru, dan grafik pengeluaran per kategori.
+  - **Beranda** — saldo, ringkasan pemasukan/pengeluaran bulan ini, **grafik pengeluaran Harian/Mingguan/Bulanan**, transaksi terbaru, dan grafik pengeluaran per kategori.
   - **Transaksi** — daftar transaksi lengkap dengan pencarian, filter jenis, dan **CRUD penuh** (tambah, lihat, ubah, hapus).
   - **Profil** — nama, NIM, kelompok, status koneksi, ringkasan, info aplikasi, panduan pasang, dan reset data.
 - **Database Supabase** — tabel `public.transactions` diakses lewat PostgREST (axios), pola yang sama seperti modul 5.
+- **Kategori kustom** — tambah, edit, dan hapus kategori sendiri (nama, ikon, warna) untuk pemasukan maupun pengeluaran; kategori kustom tersimpan di Supabase dan langsung muncul di form transaksi.
+- **Grafik pengeluaran** — kartu di Beranda dengan mode **Harian / Mingguan / Bulanan**. Batang bertumpuk mengikuti warna tiap kategori; latar merah = periode boros, latar hijau = hemat; ketuk batang untuk melihat rincian dan persentase per kategori.
 - **PWA**:
   - Dapat di-*install* (manifest + ikon 192/512 + `beforeinstallprompt`).
   - **Bekerja offline** — service worker (Workbox) mem-precache app shell; data terakhir di-cache di `localStorage`, dan perubahan yang dibuat saat offline masuk **antrean sinkronisasi** yang otomatis dikirim saat kembali online.
@@ -59,6 +61,17 @@ VITE_SUPABASE_PUBLISHABLE_KEY=sb_publishable_vLr2fsfXaxGXZikVKFpBEw_hDG6YjWT
 | `category` | text | id kategori |
 | `note` | text | catatan |
 | `date` | date | tanggal transaksi |
+| `created_at` | timestamptz | default `now()` |
+
+**Skema tabel kategori** (`public.categories`):
+
+| Kolom | Tipe | Keterangan |
+| --- | --- | --- |
+| `id` | uuid (PK) | dibuat di client |
+| `type` | text | `income` / `expense` |
+| `label` | text | nama kategori |
+| `icon` | text | nama ikon (lucide) |
+| `color` | text | warna aksen (hex) |
 | `created_at` | timestamptz | default `now()` |
 
 RLS aktif dengan policy publik (select/insert/update/delete) agar dapat diakses
@@ -128,6 +141,7 @@ public/
    `localStorage` (`dompetin.cache.transactions`).
 2. Saat offline, aplikasi memakai cache tersebut, dan setiap perubahan langsung
    diterapkan ke tampilan + cache.
-3. Perubahan yang belum terkirim disimpan di `dompetin.sync.queue`.
+3. Perubahan yang belum terkirim disimpan di `dompetin.sync.queue` (transaksi) dan
+   `dompetin.sync.categories` (kategori kustom).
 4. Begitu koneksi kembali (`online` event), antrean dikirim ke Supabase lalu data
    disegarkan.

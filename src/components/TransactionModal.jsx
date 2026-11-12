@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { ArrowDownLeft, ArrowUpRight, X, Check } from 'lucide-react'
 import { categoriesFor } from '../utils/categories'
+import { useCategories } from '../context/CategoriesContext'
 import { formatRupiah, todayISO } from '../utils/format'
 
 function blankForm() {
@@ -17,6 +18,7 @@ function blankForm() {
  * Modal form untuk menambah / mengubah transaksi (bagian dari CRUD).
  */
 export default function TransactionModal({ open, initial, onClose, onSubmit }) {
+  const { allFor } = useCategories()
   const [form, setForm] = useState(blankForm)
   const [error, setError] = useState('')
 
@@ -38,10 +40,10 @@ export default function TransactionModal({ open, initial, onClose, onSubmit }) {
 
   if (!open) return null
 
-  const categories = categoriesFor(form.type)
+  const categories = allFor(form.type)
 
   const switchType = (type) => {
-    const nextCats = categoriesFor(type)
+    const nextCats = allFor(type)
     setForm((f) => ({
       ...f,
       type,

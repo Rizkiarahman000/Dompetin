@@ -1,10 +1,12 @@
 import { Pencil, Trash2 } from 'lucide-react'
 import CategoryIcon from './CategoryIcon'
-import { findCategory, TYPE_META } from '../utils/categories'
+import { TYPE_META } from '../utils/categories'
+import { useCategories } from '../context/CategoriesContext'
 import { formatRupiah, relativeDate } from '../utils/format'
 
 export default function TransactionRow({ tx, onEdit, onDelete, compact = false }) {
-  const cat = findCategory(tx.type, tx.category)
+  const { resolve } = useCategories()
+  const cat = resolve(tx.type, tx.category)
   const meta = TYPE_META[tx.type]
 
   return (

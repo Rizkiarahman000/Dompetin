@@ -4,7 +4,7 @@ import TransactionRow from '../components/TransactionRow'
 import TransactionModal from '../components/TransactionModal'
 import ConfirmModal from '../components/ConfirmModal'
 import EmptyState from '../components/EmptyState'
-import { findCategory } from '../utils/categories'
+import { useCategories } from '../context/CategoriesContext'
 import { formatDate, relativeDate } from '../utils/format'
 
 export default function Transactions({
@@ -16,6 +16,7 @@ export default function Transactions({
   addIntent,
   onAddIntentHandled,
 }) {
+  const { resolve } = useCategories()
   const [query, setQuery] = useState('')
   const [filter, setFilter] = useState('all')
   const [modalOpen, setModalOpen] = useState(false)
@@ -37,7 +38,7 @@ export default function Transactions({
       .filter((t) => filter === 'all' || t.type === filter)
       .filter((t) => {
         if (!q) return true
-        const cat = findCategory(t.type, t.category).label.toLowerCase()
+        const cat = resolve(t.type, t.category).label.toLowerCase()
         return (t.note || '').toLowerCase().includes(q) || cat.includes(q)
       })
       .sort((a, b) => b.date.localeCompare(a.date) || b.createdAt.localeCompare(a.createdAt))
@@ -48,7 +49,7 @@ export default function Transactions({
       map.get(t.date).push(t)
     }
     return [...map.entries()]
-  }, [transactions, filter, query])
+  }, [transactions, filter, query, resolve])
 
   const totalShown = groups.reduce((sum, [, items]) => sum + items.length, 0)
 

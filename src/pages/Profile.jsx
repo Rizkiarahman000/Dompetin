@@ -8,17 +8,46 @@ import {
   Trash2,
   Smartphone,
   WifiOff,
+  Tags,
+  Plus,
+  Pencil,
 } from 'lucide-react'
 import ConfirmModal from '../components/ConfirmModal'
+import CategoryModal from '../components/CategoryModal'
+import CategoryIcon from '../components/CategoryIcon'
+import { useCategories } from '../context/CategoriesContext'
 import { formatRupiah } from '../utils/format'
 
 export default function Profile({ stats, online = true, onReset, notify }) {
+  const { addCategory, updateCategory, removeCategory, allFor } = useCategories()
   const [confirmReset, setConfirmReset] = useState(false)
+  const [catType, setCatType] = useState('expense')
+  const [catEditor, setCatEditor] = useState(null)
+  const [catToDelete, setCatToDelete] = useState(null)
 
   const handleReset = () => {
     onReset()
     setConfirmReset(false)
     notify('Semua data berhasil dihapus.')
+  }
+
+  const handleSubmitCategory = (data) => {
+    if (catEditor?.initial) {
+      updateCategory(catEditor.initial.id, data)
+      notify('Kategori diperbarui.')
+    } else {
+      addCategory(data)
+      setCatType(data.type)
+      notify('Kategori ditambahkan.')
+    }
+    setCatEditor(null)
+  }
+
+  const handleDeleteCategory = () => {
+    if (!catToDelete) return
+    removeCategory(catToDelete.id)
+    setCatToDelete(null)
+    notify('Kategori dihapus.')
   }
 
   return (
@@ -110,6 +139,75 @@ export default function Profile({ stats, online = true, onReset, notify }) {
       </div>
 
       <section className="panel">
+        <div className="panel-head">
+          <h2 className="panel-title">
+            <Tags size={16} /> Kategori transaksi
+          </h2>
+          <button
+            type="button"
+            className="btn btn--primary btn--sm"
+            onClick={() => setCatEditor({ initial: null })}
+          >
+            <Plus size={14} /> Tambah
+          </button>
+        </div>
+        <p className="muted" style={{ marginBottom: 12 }}>
+          Kategori bawaan tidak bisa diubah. Kategori buatanmu bisa ditambah, diedit, dan
+          dihapus.
+        </p>
+        <div className="segmented" style={{ marginBottom: 12 }}>
+          <button
+            type="button"
+            className={`segmented-item${catType === 'expense' ? ' is-active' : ''}`}
+            onClick={() => setCatType('expense')}
+          >
+            Pengeluaran
+          </button>
+          <button
+            type="button"
+            className={`segmented-item${catType === 'income' ? ' is-active' : ''}`}
+            onClick={() => setCatType('income')}
+          >
+            Pemasukan
+          </button>
+        </div>
+        <ul className="cat-list">
+          {allFor(catType).map((c) => (
+            <li key={c.id} className="cat-item">
+              <span className="cat-ico" style={{ '--cat': c.color }}>
+                <CategoryIcon name={c.icon} size={16} />
+              </span>
+              <span className="cat-label">{c.label}</span>
+              {c.isCustom ? (
+                <div className="cat-actions">
+                  <button
+                    type="button"
+                    className="icon-btn"
+                    onClick={() => setCatEditor({ initial: c })}
+                    aria-label={`Edit kategori ${c.label}`}
+                    title="Edit kategori"
+                  >
+                    <Pencil size={14} />
+                  </button>
+                  <button
+                    type="button"
+                    className="icon-btn icon-btn--danger"
+                    onClick={() => setCatToDelete(c)}
+                    aria-label={`Hapus kategori ${c.label}`}
+                    title="Hapus kategori"
+                  >
+                    <Trash2 size={14} />
+                  </button>
+                </div>
+              ) : (
+                <span className="cat-badge">bawaan</span>
+              )}
+            </li>
+          ))}
+        </ul>
+      </section>
+
+      <section className="panel">
         <h2 className="panel-title">
           <Smartphone size={16} /> Pasang ke perangkat
         </h2>
@@ -149,6 +247,24 @@ export default function Profile({ stats, online = true, onReset, notify }) {
         danger
         onConfirm={handleReset}
         onCancel={() => setConfirmReset(false)}
+      />
+
+      <CategoryModal
+        open={Boolean(catEditor)}
+        initial={catEditor?.initial || null}
+        type={catType}
+        onClose={() => setCatEditor(null)}
+        onSubmit={handleSubmitCategory}
+      />
+
+      <ConfirmModal
+        open={Boolean(catToDelete)}
+        title="Hapus kategori?"
+        message={`Kategori "${catToDelete?.label}" akan dihapus. Transaksi lama yang memakainya akan tampil sebagai "Lainnya".`}
+        confirmLabel="Hapus"
+        danger
+        onConfirm={handleDeleteCategory}
+        onCancel={() => setCatToDelete(null)}
       />
     </div>
   )
