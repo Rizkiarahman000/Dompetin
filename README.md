@@ -2,7 +2,7 @@
 
 Aplikasi **Progressive Web App (PWA)** untuk mencatat pemasukan dan pengeluaran
 harian. Dibuat dari awal dengan tema bebas, memakai teknologi yang sama seperti modul
-praktikum: **React + Vite + vite-plugin-pwa**.
+praktikum: **React + Vite + vite-plugin-pwa + Supabase**.
 
 > **Identitas**
 > Nama: **Rizkia Rahman**
@@ -16,10 +16,11 @@ praktikum: **React + Vite + vite-plugin-pwa**.
 - **3 halaman yang dapat dinavigasi** (tab atas di desktop, tab bawah di mobile):
   - **Beranda** — saldo, ringkasan pemasukan/pengeluaran bulan ini, transaksi terbaru, dan grafik pengeluaran per kategori.
   - **Transaksi** — daftar transaksi lengkap dengan pencarian, filter jenis, dan **CRUD penuh** (tambah, lihat, ubah, hapus).
-  - **Profil** — nama, NIM, kelompok, ringkasan, info aplikasi, panduan pasang, dan reset data.
+  - **Profil** — nama, NIM, kelompok, status koneksi, ringkasan, info aplikasi, panduan pasang, dan reset data.
+- **Database Supabase** — tabel `public.transactions` diakses lewat PostgREST (axios), pola yang sama seperti modul 5.
 - **PWA**:
   - Dapat di-*install* (manifest + ikon 192/512 + `beforeinstallprompt`).
-  - **Bekerja offline** — service worker (Workbox) mem-precache app shell; seluruh data disimpan di `localStorage`.
+  - **Bekerja offline** — service worker (Workbox) mem-precache app shell; data terakhir di-cache di `localStorage`, dan perubahan yang dibuat saat offline masuk **antrean sinkronisasi** yang otomatis dikirim saat kembali online.
   - Banner status offline & tombol pasang aplikasi.
 - **Responsif** — layout desktop & mobile (bottom tab bar), mendukung *safe area* iOS.
 - **Aksesibel** — fokus terlihat, label ARIA, kontras memadai.
@@ -31,9 +32,37 @@ praktikum: **React + Vite + vite-plugin-pwa**.
 | UI | React 19 |
 | Build tool | Vite 8 |
 | PWA | vite-plugin-pwa (Workbox) |
+| Database | Supabase (PostgREST) |
+| HTTP client | axios |
 | Ikon | lucide-react |
-| Penyimpanan | `localStorage` (offline-first) |
+| Cache offline | `localStorage` + sync queue |
 | Styling | CSS murni (design token) |
+
+## 🗄️ Konfigurasi Supabase
+
+Aplikasi memakai project Supabase `ppbmod5` (ref `pbngzienqipxluliaxgk`).
+
+**Environment variable** (opsional — ada nilai default di `src/config/api.js`):
+
+```env
+VITE_API_BASE_URL=https://pbngzienqipxluliaxgk.supabase.co
+VITE_SUPABASE_PUBLISHABLE_KEY=sb_publishable_vLr2fsfXaxGXZikVKFpBEw_hDG6YjWT
+```
+
+**Skema tabel** (`public.transactions`):
+
+| Kolom | Tipe | Keterangan |
+| --- | --- | --- |
+| `id` | uuid (PK) | dibuat di client |
+| `type` | text | `income` / `expense` |
+| `amount` | numeric | nominal > 0 |
+| `category` | text | id kategori |
+| `note` | text | catatan |
+| `date` | date | tanggal transaksi |
+| `created_at` | timestamptz | default `now()` |
+
+RLS aktif dengan policy publik (select/insert/update/delete) agar dapat diakses
+memakai *publishable key* — sama seperti pola praktikum.
 
 ## 🚀 Menjalankan secara lokal
 
@@ -71,31 +100,34 @@ npm run preview
    - Framework Preset: **Vite**
    - Build Command: `npm run build`
    - Output Directory: `dist`
-5. Klik **Deploy**. Setelah selesai, salin URL `https://<project>.vercel.app`.
-6. Buka URL tersebut, lalu uji:
-   - Navigasi Beranda / Transaksi / Profil.
-   - Tambah, ubah, dan hapus transaksi.
-   - **Install** aplikasi dari menu browser.
-   - Matikan internet → reload → aplikasi tetap terbuka (offline).
-
-> Tidak perlu environment variable atau database — semua data lokal di perangkat.
+5. (Opsional) Tambahkan Environment Variables `VITE_API_BASE_URL` dan
+   `VITE_SUPABASE_PUBLISHABLE_KEY` bila ingin memakai project Supabase lain.
+6. Klik **Deploy**, lalu salin URL `https://<project>.vercel.app`.
+7. Uji: navigasi 3 halaman, CRUD transaksi, **Install**, lalu matikan internet →
+   reload → aplikasi tetap terbuka.
 
 ## 📁 Struktur
 
 ```
 src/
-  components/   Header, TabBar, Footer, PWABadge, TransactionModal, TransactionRow, dll.
-  hooks/        useTransactions (CRUD + ringkasan + persistensi localStorage)
-  pages/        Dashboard, Transactions, Profile
-  utils/        storage, format (Rupiah/tanggal), categories
-  App.jsx       navigasi tab + toast + layout
-  index.css     design system
+  config/api.js        axios client untuk Supabase PostgREST
+  services/            transactionService (list/upsert/delete)
+  hooks/               useTransactions (Supabase + cache + sync queue + statistik)
+  pages/               Dashboard, Transactions, Profile
+  components/          Header, TabBar, Footer, PWABadge, TransactionModal, dll.
+  utils/               storage, format (Rupiah/tanggal), categories
+  App.jsx              navigasi tab + toast + layout
+  index.css            design system
 public/
   icon.svg, icon-192.png, icon-512.png, apple-touch-icon.png
 ```
 
-## 🔒 Catatan data
+## 🔄 Cara kerja offline
 
-Semua transaksi disimpan di `localStorage` perangkat (key `dompetin.transactions`).
-Data tidak dikirim ke server mana pun. Gunakan tombol **Hapus semua data** di halaman
-Profil untuk membersihkannya.
+1. Saat online, daftar transaksi diambil dari Supabase lalu disimpan ke
+   `localStorage` (`dompetin.cache.transactions`).
+2. Saat offline, aplikasi memakai cache tersebut, dan setiap perubahan langsung
+   diterapkan ke tampilan + cache.
+3. Perubahan yang belum terkirim disimpan di `dompetin.sync.queue`.
+4. Begitu koneksi kembali (`online` event), antrean dikirim ke Supabase lalu data
+   disegarkan.

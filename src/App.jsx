@@ -1,5 +1,5 @@
 import { useCallback, useRef, useState } from 'react'
-import { CheckCircle2 } from 'lucide-react'
+import { CheckCircle2, Loader } from 'lucide-react'
 import Header from './components/Header'
 import TabBar from './components/TabBar'
 import Footer from './components/Footer'
@@ -17,6 +17,8 @@ export default function App() {
 
   const {
     transactions,
+    loading,
+    online,
     addTransaction,
     updateTransaction,
     deleteTransaction,
@@ -48,29 +50,38 @@ export default function App() {
       <Header tab={tab} onNavigate={navigate} />
 
       <main className="main container">
-        {tab === 'home' && (
-          <Dashboard
-            transactions={transactions}
-            stats={stats}
-            onNavigate={navigate}
-            onAdd={openAdd}
-          />
-        )}
+        {loading && transactions.length === 0 ? (
+          <div className="state-box">
+            <Loader size={28} className="spin" />
+            <p>Memuat data dari server…</p>
+          </div>
+        ) : (
+          <>
+            {tab === 'home' && (
+              <Dashboard
+                transactions={transactions}
+                stats={stats}
+                onNavigate={navigate}
+                onAdd={openAdd}
+              />
+            )}
 
-        {tab === 'transactions' && (
-          <Transactions
-            transactions={transactions}
-            addTransaction={addTransaction}
-            updateTransaction={updateTransaction}
-            deleteTransaction={deleteTransaction}
-            notify={notify}
-            addIntent={addIntent}
-            onAddIntentHandled={handleAddIntent}
-          />
-        )}
+            {tab === 'transactions' && (
+              <Transactions
+                transactions={transactions}
+                addTransaction={addTransaction}
+                updateTransaction={updateTransaction}
+                deleteTransaction={deleteTransaction}
+                notify={notify}
+                addIntent={addIntent}
+                onAddIntentHandled={handleAddIntent}
+              />
+            )}
 
-        {tab === 'profile' && (
-          <Profile stats={stats} onReset={resetAll} notify={notify} />
+            {tab === 'profile' && (
+              <Profile stats={stats} online={online} onReset={resetAll} notify={notify} />
+            )}
+          </>
         )}
       </main>
 

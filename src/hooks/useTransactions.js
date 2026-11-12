@@ -1,102 +1,212 @@
-import { useCallback, useEffect, useMemo, useState } from 'react'
-import { readStore, writeStore, removeStore } from '../utils/storage'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import transactionService from '../services/transactionService'
+import { readStore, writeStore } from '../utils/storage'
 import { currentMonthKey, monthKey, todayISO } from '../utils/format'
 
 // ---------------------------------------------------------------------------
 // useTransactions — sumber data tunggal untuk seluruh aplikasi.
 //
-// Skema satu transaksi:
-//   { id, type: 'income'|'expense', amount, category, note, date, createdAt }
-//
-// Data dipersist ke localStorage sehingga CRUD & ringkasan tetap utuh saat
-// offline maupun setelah aplikasi ditutup.
+// Sumber data utama: Supabase (tabel public.transactions) via PostgREST.
+// Supaya PWA tetap "hidup" saat offline, hasil query di-cache ke localStorage
+// dan setiap perubahan langsung diterapkan ke cache (optimistic update).
+// Perubahan yang belum sempat terkirim masuk ke antrean (sync queue) dan
+// otomatis dikirim saat koneksi kembali online.
 // ---------------------------------------------------------------------------
 
-const STORE_KEY = 'transactions'
-const SEED_FLAG = 'seeded'
+const CACHE_KEY = 'cache.transactions'
+const QUEUE_KEY = 'sync.queue'
 
 function uid() {
   if (typeof crypto !== 'undefined' && crypto.randomUUID) return crypto.randomUUID()
-  return 'tx-' + Date.now().toString(36) + Math.random().toString(36).slice(2, 8)
+  return 'tx-' + Date.now().toString(36) + Math.random().toString(36).slice(2, 10)
 }
 
-function daysAgo(n) {
-  const d = new Date()
-  d.setDate(d.getDate() - n)
-  const offset = d.getTimezoneOffset()
-  return new Date(d.getTime() - offset * 60_000).toISOString().slice(0, 10)
-}
-
-function seedData() {
-  return [
-    { type: 'income', amount: 1500000, category: 'gaji', note: 'Uang saku bulanan', date: daysAgo(9) },
-    { type: 'income', amount: 600000, category: 'beasiswa', note: 'Beasiswa prestasi', date: daysAgo(6) },
-    { type: 'expense', amount: 45000, category: 'makan', note: 'Makan siang kampus', date: daysAgo(1) },
-    { type: 'expense', amount: 25000, category: 'transport', note: 'Ojek ke kampus', date: daysAgo(1) },
-    { type: 'expense', amount: 120000, category: 'belanja', note: 'Alat tulis & buku', date: daysAgo(3) },
-    { type: 'expense', amount: 80000, category: 'hiburan', note: 'Nonton bareng teman', date: daysAgo(4) },
-  ].map((t) => ({ ...t, id: uid(), createdAt: new Date().toISOString() }))
-}
-
-function loadInitial() {
-  const stored = readStore(STORE_KEY, null)
-  if (Array.isArray(stored)) return stored
-  // Isi contoh sekali saja supaya tampilan pertama tidak kosong.
-  if (!readStore(SEED_FLAG, false)) {
-    const seeded = seedData()
-    writeStore(STORE_KEY, seeded)
-    writeStore(SEED_FLAG, true)
-    return seeded
+function toPayload(t) {
+  return {
+    id: t.id,
+    type: t.type,
+    amount: Math.abs(Number(t.amount) || 0),
+    category: t.category,
+    note: (t.note || '').trim(),
+    date: t.date || todayISO(),
   }
-  return []
+}
+
+function loadQueue() {
+  const q = readStore(QUEUE_KEY, null)
+  if (q && typeof q === 'object') {
+    return {
+      upserts: q.upserts && typeof q.upserts === 'object' ? q.upserts : {},
+      deletes: Array.isArray(q.deletes) ? q.deletes : [],
+    }
+  }
+  return { upserts: {}, deletes: [] }
+}
+
+function isOnline() {
+  return typeof navigator === 'undefined' ? true : navigator.onLine
 }
 
 export function useTransactions() {
-  const [transactions, setTransactions] = useState(loadInitial)
+  const [transactions, setTransactions] = useState(() => {
+    const cached = readStore(CACHE_KEY, [])
+    return Array.isArray(cached) ? cached : []
+  })
+  const [loading, setLoading] = useState(true)
+  const [online, setOnline] = useState(isOnline)
+
+  const txRef = useRef(transactions)
+  const queueRef = useRef(loadQueue())
+
+  const commit = useCallback((next) => {
+    txRef.current = next
+    setTransactions(next)
+    writeStore(CACHE_KEY, next)
+  }, [])
+
+  const saveQueue = useCallback(() => {
+    writeStore(QUEUE_KEY, queueRef.current)
+  }, [])
+
+  const enqueueUpsert = useCallback(
+    (row) => {
+      const q = queueRef.current
+      q.upserts[row.id] = toPayload(row)
+      q.deletes = q.deletes.filter((id) => id !== row.id)
+      saveQueue()
+    },
+    [saveQueue],
+  )
+
+  const enqueueDelete = useCallback(
+    (id) => {
+      const q = queueRef.current
+      delete q.upserts[id]
+      if (!q.deletes.includes(id)) q.deletes.push(id)
+      saveQueue()
+    },
+    [saveQueue],
+  )
+
+  const flushQueue = useCallback(async () => {
+    if (!isOnline()) return false
+    const q = queueRef.current
+
+    for (const id of [...q.deletes]) {
+      await transactionService.remove(id)
+      q.deletes = q.deletes.filter((x) => x !== id)
+      saveQueue()
+    }
+
+    const rows = Object.values(q.upserts)
+    if (rows.length > 0) {
+      await transactionService.upsertMany(rows)
+      for (const row of rows) delete q.upserts[row.id]
+      saveQueue()
+    }
+
+    return true
+  }, [saveQueue])
+
+  const refresh = useCallback(async () => {
+    if (!isOnline()) {
+      setLoading(false)
+      return
+    }
+    try {
+      setLoading(true)
+      await flushQueue()
+      const rows = await transactionService.list()
+      commit(rows)
+    } catch {
+      // Server tidak terjangkau — biarkan cache lokal tetap tampil.
+    } finally {
+      setLoading(false)
+    }
+  }, [commit, flushQueue])
 
   useEffect(() => {
-    writeStore(STORE_KEY, transactions)
-  }, [transactions])
+    refresh()
+  }, [refresh])
 
-  const addTransaction = useCallback((data) => {
-    const entry = {
-      id: uid(),
-      type: data.type,
-      amount: Math.abs(Number(data.amount) || 0),
-      category: data.category,
-      note: (data.note || '').trim(),
-      date: data.date || todayISO(),
-      createdAt: new Date().toISOString(),
+  useEffect(() => {
+    const handleOnline = () => {
+      setOnline(true)
+      refresh()
     }
-    setTransactions((prev) => [entry, ...prev])
-    return entry
-  }, [])
+    const handleOffline = () => setOnline(false)
+    window.addEventListener('online', handleOnline)
+    window.addEventListener('offline', handleOffline)
+    return () => {
+      window.removeEventListener('online', handleOnline)
+      window.removeEventListener('offline', handleOffline)
+    }
+  }, [refresh])
 
-  const updateTransaction = useCallback((id, data) => {
-    setTransactions((prev) =>
-      prev.map((t) =>
-        t.id === id
-          ? {
-              ...t,
-              type: data.type ?? t.type,
-              amount: data.amount != null ? Math.abs(Number(data.amount) || 0) : t.amount,
-              category: data.category ?? t.category,
-              note: data.note != null ? data.note.trim() : t.note,
-              date: data.date ?? t.date,
-            }
-          : t,
-      ),
-    )
-  }, [])
+  const sync = useCallback(() => {
+    flushQueue().catch(() => {
+      // Gagal kirim (offline) — perubahan tetap di antrean untuk dicoba lagi.
+    })
+  }, [flushQueue])
 
-  const deleteTransaction = useCallback((id) => {
-    setTransactions((prev) => prev.filter((t) => t.id !== id))
-  }, [])
+  const addTransaction = useCallback(
+    (data) => {
+      const row = {
+        id: uid(),
+        type: data.type,
+        amount: Math.abs(Number(data.amount) || 0),
+        category: data.category,
+        note: (data.note || '').trim(),
+        date: data.date || todayISO(),
+        createdAt: new Date().toISOString(),
+      }
+      commit([row, ...txRef.current])
+      enqueueUpsert(row)
+      sync()
+      return row
+    },
+    [commit, enqueueUpsert, sync],
+  )
+
+  const updateTransaction = useCallback(
+    (id, data) => {
+      const current = txRef.current.find((t) => t.id === id)
+      if (!current) return
+      const updated = {
+        ...current,
+        type: data.type ?? current.type,
+        amount: data.amount != null ? Math.abs(Number(data.amount) || 0) : current.amount,
+        category: data.category ?? current.category,
+        note: data.note != null ? data.note.trim() : current.note,
+        date: data.date ?? current.date,
+      }
+      commit(txRef.current.map((t) => (t.id === id ? updated : t)))
+      enqueueUpsert(updated)
+      sync()
+    },
+    [commit, enqueueUpsert, sync],
+  )
+
+  const deleteTransaction = useCallback(
+    (id) => {
+      commit(txRef.current.filter((t) => t.id !== id))
+      enqueueDelete(id)
+      sync()
+    },
+    [commit, enqueueDelete, sync],
+  )
 
   const resetAll = useCallback(() => {
-    setTransactions([])
-    removeStore(SEED_FLAG)
-  }, [])
+    const ids = txRef.current.map((t) => t.id)
+    commit([])
+    queueRef.current.upserts = {}
+    ids.forEach((id) => enqueueDelete(id))
+    saveQueue()
+    if (isOnline()) {
+      transactionService.removeAll().catch(() => {})
+    }
+    sync()
+  }, [commit, enqueueDelete, saveQueue, sync])
 
   const stats = useMemo(() => {
     const thisMonth = currentMonthKey()
@@ -131,7 +241,16 @@ export function useTransactions() {
     }
   }, [transactions])
 
-  return { transactions, addTransaction, updateTransaction, deleteTransaction, resetAll, stats }
+  return {
+    transactions,
+    loading,
+    online,
+    addTransaction,
+    updateTransaction,
+    deleteTransaction,
+    resetAll,
+    stats,
+  }
 }
 
 export default useTransactions

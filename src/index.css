@@ -1323,6 +1323,61 @@ button {
   }
 }
 
+/* ---- loading state & connection chip ----------------------------------- */
+.state-box {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  min-height: 40vh;
+  color: var(--muted);
+  font-size: 0.9rem;
+}
+
+.spin {
+  animation: spin 0.9s linear infinite;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.conn-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  margin-top: 8px;
+  font-size: 0.76rem;
+  font-weight: 600;
+  padding: 5px 10px;
+  border-radius: 999px;
+  background: var(--surface-2);
+  color: var(--ink-2);
+  border: 1px solid var(--line);
+}
+
+.conn-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: currentColor;
+}
+
+.conn-chip.is-online {
+  color: var(--brand);
+  background: var(--brand-soft);
+  border-color: transparent;
+}
+
+.conn-chip.is-offline {
+  color: var(--warn);
+  background: #fff4e6;
+  border-color: #f8d8a8;
+}
+
 @media (prefers-reduced-motion: reduce) {
   *,
   *::before,

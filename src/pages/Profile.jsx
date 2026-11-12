@@ -12,7 +12,7 @@ import {
 import ConfirmModal from '../components/ConfirmModal'
 import { formatRupiah } from '../utils/format'
 
-export default function Profile({ stats, onReset, notify }) {
+export default function Profile({ stats, online = true, onReset, notify }) {
   const [confirmReset, setConfirmReset] = useState(false)
 
   const handleReset = () => {
@@ -27,6 +27,10 @@ export default function Profile({ stats, onReset, notify }) {
         <div>
           <h1 className="page-title">Profil</h1>
           <p className="page-sub">Identitas pemilik dompet & pengaturan aplikasi.</p>
+          <span className={`conn-chip ${online ? 'is-online' : 'is-offline'}`}>
+            <span className="conn-dot" />
+            {online ? 'Terhubung ke Supabase' : 'Mode offline — data lokal'}
+          </span>
         </div>
       </section>
 
@@ -99,7 +103,8 @@ export default function Profile({ stats, onReset, notify }) {
             <li>React 19</li>
             <li>Vite</li>
             <li>vite-plugin-pwa</li>
-            <li>localStorage</li>
+            <li>Supabase</li>
+            <li>localStorage cache</li>
           </ul>
         </section>
       </div>
@@ -119,8 +124,8 @@ export default function Profile({ stats, onReset, notify }) {
           </li>
         </ol>
         <p className="hint">
-          <WifiOff size={14} /> Semua catatan disimpan di perangkat ini, jadi tetap bisa
-          dibuka tanpa internet.
+          <WifiOff size={14} /> Data disinkronkan ke Supabase, dengan salinan cache lokal
+          sehingga aplikasi tetap bisa dibuka dan diubah meski tanpa internet.
         </p>
       </section>
 
