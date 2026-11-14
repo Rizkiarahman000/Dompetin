@@ -1,8 +1,8 @@
-# Dompetin — PWA Catatan Keuangan
+# Dompetin — PWA Catatan Pengeluaran
 
-Aplikasi **Progressive Web App (PWA)** untuk mencatat pemasukan dan pengeluaran
-harian. Dibuat dari awal dengan tema bebas, memakai teknologi yang sama seperti modul
-praktikum: **React + Vite + vite-plugin-pwa + Supabase**.
+Aplikasi **Progressive Web App (PWA)** untuk mencatat dan mengelola **pengeluaran
+harian**. Dibuat dengan teknologi yang sama seperti modul praktikum: **React + Vite +
+vite-plugin-pwa + Supabase**.
 
 > **Identitas**
 > Nama: **Rizkia Rahman**
@@ -14,18 +14,26 @@ praktikum: **React + Vite + vite-plugin-pwa + Supabase**.
 ## ✨ Fitur
 
 - **3 halaman yang dapat dinavigasi** (tab atas di desktop, tab bawah di mobile):
-  - **Beranda** — saldo, ringkasan pemasukan/pengeluaran bulan ini, **grafik pengeluaran Harian/Mingguan/Bulanan**, transaksi terbaru, dan grafik pengeluaran per kategori.
-  - **Transaksi** — daftar transaksi lengkap dengan pencarian, filter jenis, dan **CRUD penuh** (tambah, lihat, ubah, hapus).
-  - **Profil** — nama, NIM, kelompok, status koneksi, ringkasan, info aplikasi, panduan pasang, dan reset data.
-- **Database Supabase** — tabel `public.transactions` diakses lewat PostgREST (axios), pola yang sama seperti modul 5.
-- **Kategori kustom** — tambah, edit, dan hapus kategori sendiri (nama, ikon, warna) untuk pemasukan maupun pengeluaran; kategori kustom tersimpan di Supabase dan langsung muncul di form transaksi.
-- **Grafik pengeluaran** — kartu di Beranda dengan mode **Harian / Mingguan / Bulanan**. Batang bertumpuk mengikuti warna tiap kategori; latar merah = periode boros, latar hijau = hemat; ketuk batang untuk melihat rincian dan persentase per kategori.
+  - **Beranda** — ringkasan pengeluaran bulan ini & hari ini, rata-rata harian,
+    kategori terboros, **grafik pengeluaran Harian/Mingguan/Bulanan**, pengeluaran
+    terbaru, dan pengeluaran per kategori.
+  - **Pengeluaran** — daftar pengeluaran dengan pencarian, **filter kategori**, dan
+    **CRUD penuh** (tambah, lihat, ubah, hapus).
+  - **Profil** — nama, NIM, kelompok, ringkasan pengeluaran, **kelola kategori
+    pengeluaran** (tambah/edit/hapus), panduan pasang, dan reset data.
+- **Kategori kustom** — tambah, edit, dan hapus kategori pengeluaran sendiri
+  (nama, ikon, warna); tersimpan di Supabase dan langsung muncul di form.
+- **Grafik pengeluaran** — batang bertumpuk mengikuti warna tiap kategori; latar merah
+  = periode boros, latar hijau = hemat; ketuk batang untuk melihat rincian dan
+  persentase per kategori.
+- **Database Supabase** — tabel `public.transactions` (khusus `expense`) dan
+  `public.categories`, diakses lewat PostgREST (axios) seperti modul 5.
 - **PWA**:
   - Dapat di-*install* (manifest + ikon 192/512 + `beforeinstallprompt`).
-  - **Bekerja offline** — service worker (Workbox) mem-precache app shell; data terakhir di-cache di `localStorage`, dan perubahan yang dibuat saat offline masuk **antrean sinkronisasi** yang otomatis dikirim saat kembali online.
-  - Banner status offline & tombol pasang aplikasi.
-- **Responsif** — layout desktop & mobile (bottom tab bar), mendukung *safe area* iOS.
-- **Aksesibel** — fokus terlihat, label ARIA, kontras memadai.
+  - **Bekerja offline** — service worker (Workbox) mem-precache app shell; data
+    terakhir di-cache di `localStorage`, dan perubahan saat offline masuk **antrean
+    sinkronisasi** yang dikirim otomatis ketika kembali online.
+- **Responsif & aksesibel** — layout desktop/mobile, fokus terlihat, label ARIA.
 
 ## 🧱 Teknologi
 
@@ -42,7 +50,7 @@ praktikum: **React + Vite + vite-plugin-pwa + Supabase**.
 
 ## 🗄️ Konfigurasi Supabase
 
-Aplikasi memakai project Supabase `ppbmod5` (ref `pbngzienqipxluliaxgk`).
+Project Supabase `ppbmod5` (ref `pbngzienqipxluliaxgk`).
 
 **Environment variable** (opsional — ada nilai default di `src/config/api.js`):
 
@@ -51,24 +59,24 @@ VITE_API_BASE_URL=https://pbngzienqipxluliaxgk.supabase.co
 VITE_SUPABASE_PUBLISHABLE_KEY=sb_publishable_vLr2fsfXaxGXZikVKFpBEw_hDG6YjWT
 ```
 
-**Skema tabel** (`public.transactions`):
+**Tabel `public.transactions`** (aplikasi hanya memakai `type = 'expense'`):
 
 | Kolom | Tipe | Keterangan |
 | --- | --- | --- |
 | `id` | uuid (PK) | dibuat di client |
-| `type` | text | `income` / `expense` |
+| `type` | text | selalu `expense` |
 | `amount` | numeric | nominal > 0 |
-| `category` | text | id kategori |
+| `category` | text | id kategori pengeluaran |
 | `note` | text | catatan |
-| `date` | date | tanggal transaksi |
+| `date` | date | tanggal pengeluaran |
 | `created_at` | timestamptz | default `now()` |
 
-**Skema tabel kategori** (`public.categories`):
+**Tabel `public.categories`** (kategori kustom pengeluaran):
 
 | Kolom | Tipe | Keterangan |
 | --- | --- | --- |
 | `id` | uuid (PK) | dibuat di client |
-| `type` | text | `income` / `expense` |
+| `type` | text | selalu `expense` |
 | `label` | text | nama kategori |
 | `icon` | text | nama ikon (lucide) |
 | `color` | text | warna aksen (hex) |
@@ -96,39 +104,33 @@ npm run preview
 ## ☁️ Deploy ke Vercel
 
 1. Buat repository GitHub baru, misalnya `Dompetin`.
-2. Dari folder ini, jalankan:
+2. Dari folder ini:
 
    ```bash
    git init
    git add .
-   git commit -m "Dompetin - PWA catatan keuangan"
+   git commit -m "Dompetin - PWA catatan pengeluaran"
    git branch -M main
    git remote add origin https://github.com/<USERNAME>/Dompetin.git
    git push -u origin main
    ```
 
-3. Buka [vercel.com](https://vercel.com) → **Add New… → Project** → import repository
-   `Dompetin`.
-4. Vercel otomatis mendeteksi **Vite**. Pastikan:
-   - Framework Preset: **Vite**
-   - Build Command: `npm run build`
-   - Output Directory: `dist`
-5. (Opsional) Tambahkan Environment Variables `VITE_API_BASE_URL` dan
-   `VITE_SUPABASE_PUBLISHABLE_KEY` bila ingin memakai project Supabase lain.
-6. Klik **Deploy**, lalu salin URL `https://<project>.vercel.app`.
-7. Uji: navigasi 3 halaman, CRUD transaksi, **Install**, lalu matikan internet →
-   reload → aplikasi tetap terbuka.
+3. Buka [vercel.com](https://vercel.com) → **Add New… → Project** → import repo.
+4. Vercel otomatis mendeteksi **Vite** (build `npm run build`, output `dist`).
+5. (Opsional) tambahkan environment variable Supabase di atas.
+6. **Deploy**, lalu salin URL `https://<project>.vercel.app`.
 
 ## 📁 Struktur
 
 ```
 src/
   config/api.js        axios client untuk Supabase PostgREST
-  services/            transactionService (list/upsert/delete)
-  hooks/               useTransactions (Supabase + cache + sync queue + statistik)
+  services/            transactionService, categoryService
+  hooks/               useTransactions, useCategories (cache + sync queue)
+  context/             CategoriesContext
   pages/               Dashboard, Transactions, Profile
-  components/          Header, TabBar, Footer, PWABadge, TransactionModal, dll.
-  utils/               storage, format (Rupiah/tanggal), categories
+  components/          Header, TabBar, PWABadge, ExpenseChart, CategoryModal, dll.
+  utils/               expenseBuckets, storage, format, categories
   App.jsx              navigasi tab + toast + layout
   index.css            design system
 public/
@@ -137,11 +139,10 @@ public/
 
 ## 🔄 Cara kerja offline
 
-1. Saat online, daftar transaksi diambil dari Supabase lalu disimpan ke
-   `localStorage` (`dompetin.cache.transactions`).
+1. Saat online, data pengeluaran & kategori diambil dari Supabase lalu disimpan ke
+   `localStorage` (`dompetin.cache.transactions`, `dompetin.cache.categories`).
 2. Saat offline, aplikasi memakai cache tersebut, dan setiap perubahan langsung
    diterapkan ke tampilan + cache.
-3. Perubahan yang belum terkirim disimpan di `dompetin.sync.queue` (transaksi) dan
-   `dompetin.sync.categories` (kategori kustom).
-4. Begitu koneksi kembali (`online` event), antrean dikirim ke Supabase lalu data
-   disegarkan.
+3. Perubahan yang belum terkirim disimpan di `dompetin.sync.queue` (pengeluaran) dan
+   `dompetin.sync.categories` (kategori).
+4. Begitu koneksi kembali, antrean dikirim ke Supabase lalu data disegarkan.

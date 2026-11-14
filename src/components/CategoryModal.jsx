@@ -15,36 +15,24 @@ const PRESET_COLORS = [
   '#495057',
 ]
 
-export default function CategoryModal({
-  open,
-  initial = null,
-  type = 'expense',
-  onClose,
-  onSubmit,
-}) {
+export default function CategoryModal({ open, initial = null, onClose, onSubmit }) {
   const isEdit = Boolean(initial)
-  const [form, setForm] = useState({ type, label: '', icon: 'Tag', color: '#0b7a5b' })
+  const [form, setForm] = useState({ label: '', icon: 'Tag', color: '#0b7a5b' })
   const [error, setError] = useState('')
 
   useEffect(() => {
     if (!open) return
     if (initial) {
       setForm({
-        type: initial.type,
         label: initial.label || '',
         icon: initial.icon || 'Tag',
         color: initial.color || '#0b7a5b',
       })
     } else {
-      setForm({
-        type: type === 'income' ? 'income' : 'expense',
-        label: '',
-        icon: 'Tag',
-        color: '#0b7a5b',
-      })
+      setForm({ label: '', icon: 'Tag', color: '#0b7a5b' })
     }
     setError('')
-  }, [open, initial, type])
+  }, [open, initial])
 
   if (!open) return null
 
@@ -74,38 +62,12 @@ export default function CategoryModal({
         </div>
 
         <form className="tx-form" onSubmit={handleSubmit}>
-          {isEdit ? (
-            <div className="field">
-              <span className="field-label">Jenis</span>
-              <span className={`cat-type-static is-${form.type}`}>
-                {form.type === 'income' ? 'Pemasukan' : 'Pengeluaran'}
-              </span>
-            </div>
-          ) : (
-            <div className="type-switch" role="group" aria-label="Jenis kategori">
-              <button
-                type="button"
-                className={`type-switch-btn${form.type === 'expense' ? ' is-active is-expense' : ''}`}
-                onClick={() => setForm((f) => ({ ...f, type: 'expense' }))}
-              >
-                Pengeluaran
-              </button>
-              <button
-                type="button"
-                className={`type-switch-btn${form.type === 'income' ? ' is-active is-income' : ''}`}
-                onClick={() => setForm((f) => ({ ...f, type: 'income' }))}
-              >
-                Pemasukan
-              </button>
-            </div>
-          )}
-
           <label className="field">
             <span className="field-label">Nama kategori</span>
             <input
               type="text"
               maxLength={40}
-              placeholder="mis. Kopi, Langganan, Investasi"
+              placeholder="mis. Kopi, Langganan, Transport"
               value={form.label}
               onChange={(e) => setForm((f) => ({ ...f, label: e.target.value }))}
               autoFocus

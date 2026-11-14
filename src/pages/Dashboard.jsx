@@ -1,12 +1,11 @@
 import { useMemo } from 'react'
 import {
-  ArrowDownLeft,
-  ArrowUpRight,
-  TrendingUp,
-  TrendingDown,
   Plus,
   ChevronRight,
   Wallet,
+  CalendarDays,
+  TrendingDown,
+  Tag,
 } from 'lucide-react'
 import TransactionRow from '../components/TransactionRow'
 import EmptyState from '../components/EmptyState'
@@ -27,7 +26,8 @@ export default function Dashboard({ transactions, stats, onNavigate, onAdd }) {
 
   const recent = useMemo(
     () =>
-      [...transactions]
+      transactions
+        .filter((t) => t.type === 'expense')
         .sort((a, b) => b.date.localeCompare(a.date) || b.createdAt.localeCompare(a.createdAt))
         .slice(0, 5),
     [transactions],
@@ -41,6 +41,10 @@ export default function Dashboard({ transactions, stats, onNavigate, onAdd }) {
     return { entries, total }
   }, [stats.byCategory, resolve])
 
+  const topCategory = breakdown.entries[0] || null
+  const daysElapsed = new Date().getDate()
+  const avgPerDay = stats.monthExpense / (daysElapsed || 1)
+
   return (
     <div className="page">
       <section className="hero">
@@ -48,27 +52,27 @@ export default function Dashboard({ transactions, stats, onNavigate, onAdd }) {
           <span className="eyebrow">{greeting()} 👋</span>
           <h1 className="hero-title">Halo, Rizkia</h1>
           <p className="hero-sub">
-            Ini ringkasan keuanganmu. Catat tiap rupiah supaya dompet tetap waras.
+            Catat tiap pengeluaran supaya kamu tahu ke mana uangmu pergi.
           </p>
           <button type="button" className="btn btn--primary" onClick={onAdd}>
-            <Plus size={17} /> Catat transaksi
+            <Plus size={17} /> Catat pengeluaran
           </button>
         </div>
 
         <div className="balance-card">
           <div className="balance-top">
             <span className="balance-label">
-              <Wallet size={15} /> Saldo saat ini
+              <Wallet size={15} /> Pengeluaran bulan ini
             </span>
             <span className="balance-month">{monthLabel(stats.thisMonth)}</span>
           </div>
-          <strong className="balance-value">{formatRupiah(stats.balance)}</strong>
+          <strong className="balance-value">{formatRupiah(stats.monthExpense)}</strong>
           <div className="balance-split">
-            <span className="balance-chip balance-chip--in">
-              <ArrowDownLeft size={14} /> {formatRupiah(stats.monthIncome)}
-            </span>
             <span className="balance-chip balance-chip--out">
-              <ArrowUpRight size={14} /> {formatRupiah(stats.monthExpense)}
+              <CalendarDays size={14} /> Hari ini {formatRupiah(stats.todayExpense)}
+            </span>
+            <span className="balance-chip">
+              <Wallet size={14} /> Total {formatRupiah(stats.expense)}
             </span>
           </div>
         </div>
@@ -76,21 +80,24 @@ export default function Dashboard({ transactions, stats, onNavigate, onAdd }) {
 
       <section className="stat-grid">
         <article className="stat-card">
-          <span className="stat-ico stat-ico--in">
-            <TrendingUp size={18} />
-          </span>
-          <div>
-            <span className="stat-label">Pemasukan bulan ini</span>
-            <strong>{formatRupiah(stats.monthIncome)}</strong>
-          </div>
-        </article>
-        <article className="stat-card">
           <span className="stat-ico stat-ico--out">
             <TrendingDown size={18} />
           </span>
           <div>
-            <span className="stat-label">Pengeluaran bulan ini</span>
-            <strong>{formatRupiah(stats.monthExpense)}</strong>
+            <span className="stat-label">Rata-rata / hari (bulan ini)</span>
+            <strong>{formatRupiah(avgPerDay)}</strong>
+          </div>
+        </article>
+        <article className="stat-card">
+          <span className="stat-ico stat-ico--neutral">
+            <Tag size={18} />
+          </span>
+          <div>
+            <span className="stat-label">Kategori terboros</span>
+            <strong>{topCategory ? topCategory.label : '—'}</strong>
+            {topCategory && (
+              <small className="stat-sub">{formatRupiah(topCategory.amount)}</small>
+            )}
           </div>
         </article>
       </section>
@@ -100,7 +107,7 @@ export default function Dashboard({ transactions, stats, onNavigate, onAdd }) {
       <div className="cols">
         <section className="panel">
           <header className="panel-head">
-            <h2 className="panel-title">Transaksi terbaru</h2>
+            <h2 className="panel-title">Pengeluaran terbaru</h2>
             <button
               type="button"
               className="link-btn"
@@ -112,8 +119,8 @@ export default function Dashboard({ transactions, stats, onNavigate, onAdd }) {
 
           {recent.length === 0 ? (
             <EmptyState
-              title="Belum ada transaksi"
-              text="Mulai catat pemasukan atau pengeluaran pertamamu."
+              title="Belum ada pengeluaran"
+              text="Mulai catat pengeluaran pertamamu."
               action={
                 <button type="button" className="btn btn--primary btn--sm" onClick={onAdd}>
                   <Plus size={15} /> Catat sekarang

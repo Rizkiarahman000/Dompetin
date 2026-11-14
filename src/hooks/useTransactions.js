@@ -153,7 +153,7 @@ export function useTransactions() {
     (data) => {
       const row = {
         id: uid(),
-        type: data.type,
+        type: 'expense',
         amount: Math.abs(Number(data.amount) || 0),
         category: data.category,
         note: (data.note || '').trim(),
@@ -210,32 +210,32 @@ export function useTransactions() {
 
   const stats = useMemo(() => {
     const thisMonth = currentMonthKey()
-    let income = 0
+    const today = todayISO()
     let expense = 0
-    let monthIncome = 0
     let monthExpense = 0
+    let todayExpense = 0
+    let count = 0
     const byCategory = {}
 
     for (const t of transactions) {
-      if (t.type === 'income') income += t.amount
-      else expense += t.amount
+      if (t.type !== 'expense') continue
+      const amount = Number(t.amount) || 0
+      expense += amount
+      count += 1
+
+      if (t.date === today) todayExpense += amount
 
       if (monthKey(t.date) === thisMonth) {
-        if (t.type === 'income') monthIncome += t.amount
-        else {
-          monthExpense += t.amount
-          byCategory[t.category] = (byCategory[t.category] || 0) + t.amount
-        }
+        monthExpense += amount
+        byCategory[t.category] = (byCategory[t.category] || 0) + amount
       }
     }
 
     return {
-      income,
       expense,
-      balance: income - expense,
-      monthIncome,
       monthExpense,
-      count: transactions.length,
+      todayExpense,
+      count,
       byCategory,
       thisMonth,
     }

@@ -1,13 +1,11 @@
 import { Pencil, Trash2 } from 'lucide-react'
 import CategoryIcon from './CategoryIcon'
-import { TYPE_META } from '../utils/categories'
 import { useCategories } from '../context/CategoriesContext'
 import { formatRupiah, relativeDate } from '../utils/format'
 
 export default function TransactionRow({ tx, onEdit, onDelete, compact = false }) {
   const { resolve } = useCategories()
-  const cat = resolve(tx.type, tx.category)
-  const meta = TYPE_META[tx.type]
+  const cat = resolve('expense', tx.category)
 
   return (
     <li className={`tx-row${compact ? ' tx-row--compact' : ''}`}>
@@ -24,9 +22,7 @@ export default function TransactionRow({ tx, onEdit, onDelete, compact = false }
         </span>
       </div>
 
-      <span className={`tx-amount tx-amount--${tx.type}`}>
-        {meta.sign} {formatRupiah(tx.amount)}
-      </span>
+      <span className="tx-amount tx-amount--expense">− {formatRupiah(tx.amount)}</span>
 
       {!compact && (onEdit || onDelete) && (
         <div className="tx-actions">
@@ -36,7 +32,7 @@ export default function TransactionRow({ tx, onEdit, onDelete, compact = false }
               className="icon-btn"
               onClick={() => onEdit(tx)}
               title="Ubah"
-              aria-label={`Ubah transaksi ${tx.note || cat.label}`}
+              aria-label={`Ubah pengeluaran ${tx.note || cat.label}`}
             >
               <Pencil size={15} />
             </button>
@@ -47,7 +43,7 @@ export default function TransactionRow({ tx, onEdit, onDelete, compact = false }
               className="icon-btn icon-btn--danger"
               onClick={() => onDelete(tx)}
               title="Hapus"
-              aria-label={`Hapus transaksi ${tx.note || cat.label}`}
+              aria-label={`Hapus pengeluaran ${tx.note || cat.label}`}
             >
               <Trash2 size={15} />
             </button>

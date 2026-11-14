@@ -16,14 +16,14 @@ export default function Transactions({
   addIntent,
   onAddIntentHandled,
 }) {
-  const { resolve } = useCategories()
+  const { resolve, allFor } = useCategories()
   const [query, setQuery] = useState('')
-  const [filter, setFilter] = useState('all')
+  const [categoryFilter, setCategoryFilter] = useState('all')
   const [modalOpen, setModalOpen] = useState(false)
   const [editing, setEditing] = useState(null)
   const [deleting, setDeleting] = useState(null)
 
-  // Dibuka otomatis saat pengguna menekan tombol "Catat transaksi" global.
+  // Dibuka otomatis saat pengguna menekan tombol "Catat pengeluaran" global.
   useEffect(() => {
     if (addIntent) {
       setEditing(null)
@@ -32,13 +32,16 @@ export default function Transactions({
     }
   }, [addIntent, onAddIntentHandled])
 
+  const categories = allFor('expense')
+
   const groups = useMemo(() => {
     const q = query.trim().toLowerCase()
     const filtered = transactions
-      .filter((t) => filter === 'all' || t.type === filter)
+      .filter((t) => t.type === 'expense')
+      .filter((t) => categoryFilter === 'all' || t.category === categoryFilter)
       .filter((t) => {
         if (!q) return true
-        const cat = resolve(t.type, t.category).label.toLowerCase()
+        const cat = resolve('expense', t.category).label.toLowerCase()
         return (t.note || '').toLowerCase().includes(q) || cat.includes(q)
       })
       .sort((a, b) => b.date.localeCompare(a.date) || b.createdAt.localeCompare(a.createdAt))
@@ -49,7 +52,7 @@ export default function Transactions({
       map.get(t.date).push(t)
     }
     return [...map.entries()]
-  }, [transactions, filter, query, resolve])
+  }, [transactions, categoryFilter, query, resolve])
 
   const totalShown = groups.reduce((sum, [, items]) => sum + items.length, 0)
 
@@ -69,10 +72,10 @@ export default function Transactions({
   const handleSubmit = (data) => {
     if (editing) {
       updateTransaction(editing.id, data)
-      notify('Transaksi diperbarui.')
+      notify('Pengeluaran diperbarui.')
     } else {
       addTransaction(data)
-      notify('Transaksi ditambahkan.')
+      notify('Pengeluaran ditambahkan.')
     }
     closeModal()
   }
@@ -81,17 +84,19 @@ export default function Transactions({
     if (!deleting) return
     deleteTransaction(deleting.id)
     setDeleting(null)
-    notify('Transaksi dihapus.')
+    notify('Pengeluaran dihapus.')
   }
 
   return (
     <div className="page">
       <section className="page-head">
         <div>
-          <h1 className="page-title">Transaksi</h1>
+          <h1 className="page-title">Pengeluaran</h1>
           <p className="page-sub">
             {totalShown} catatan
-            {filter !== 'all' ? ` · ${filter === 'income' ? 'pemasukan' : 'pengeluaran'}` : ''}
+            {categoryFilter !== 'all'
+              ? ` · ${resolve('expense', categoryFilter).label}`
+              : ''}
           </p>
         </div>
         <button type="button" className="btn btn--primary" onClick={openAdd}>
@@ -106,39 +111,36 @@ export default function Transactions({
             value={query}
             onChange={(e) => setQuery(e.target.value)}
             placeholder="Cari catatan atau kategori…"
-            aria-label="Cari transaksi"
+            aria-label="Cari pengeluaran"
           />
         </label>
-        <div className="segmented" role="group" aria-label="Filter jenis transaksi">
-          {[
-            ['all', 'Semua'],
-            ['income', 'Masuk'],
-            ['expense', 'Keluar'],
-          ].map(([id, label]) => (
-            <button
-              key={id}
-              type="button"
-              className={`segmented-item${filter === id ? ' is-active' : ''}`}
-              onClick={() => setFilter(id)}
-            >
-              {label}
-            </button>
+        <select
+          className="filter-select"
+          value={categoryFilter}
+          onChange={(e) => setCategoryFilter(e.target.value)}
+          aria-label="Filter kategori"
+        >
+          <option value="all">Semua kategori</option>
+          {categories.map((c) => (
+            <option key={c.id} value={c.id}>
+              {c.label}
+            </option>
           ))}
-        </div>
+        </select>
       </div>
 
       {groups.length === 0 ? (
         <EmptyState
-          title={transactions.length === 0 ? 'Belum ada transaksi' : 'Tidak ada hasil'}
+          title={transactions.length === 0 ? 'Belum ada pengeluaran' : 'Tidak ada hasil'}
           text={
             transactions.length === 0
-              ? 'Yuk catat transaksi pertamamu — pemasukan atau pengeluaran.'
-              : 'Coba ubah kata kunci atau filter jenis transaksi.'
+              ? 'Yuk catat pengeluaran pertamamu.'
+              : 'Coba ubah kata kunci atau filter kategori.'
           }
           action={
             transactions.length === 0 ? (
               <button type="button" className="btn btn--primary btn--sm" onClick={openAdd}>
-                <Plus size={15} /> Tambah transaksi
+                <Plus size={15} /> Tambah pengeluaran
               </button>
             ) : null
           }
@@ -174,8 +176,8 @@ export default function Transactions({
 
       <ConfirmModal
         open={Boolean(deleting)}
-        title="Hapus transaksi?"
-        message={`"${deleting?.note || 'Transaksi ini'}" akan dihapus permanen dari perangkatmu.`}
+        title="Hapus pengeluaran?"
+        message={`"${deleting?.note || 'Pengeluaran ini'}" akan dihapus permanen dari perangkatmu.`}
         confirmLabel="Hapus"
         danger
         onConfirm={handleDelete}

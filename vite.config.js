@@ -11,10 +11,10 @@ export default defineConfig({
       devOptions: { enabled: true },
       includeAssets: ['icon.svg', 'icon-192.png', 'icon-512.png'],
       manifest: {
-        name: 'Dompetin — Catatan Keuangan',
+        name: 'Dompetin — Catatan Pengeluaran',
         short_name: 'Dompetin',
         description:
-          'Kelola pemasukan dan pengeluaran harianmu dengan rapi, cepat, dan bisa dipakai offline.',
+          'Catat dan kelola pengeluaran harianmu dengan rapi, cepat, dan bisa dipakai offline.',
         lang: 'id',
         start_url: '/',
         scope: '/',

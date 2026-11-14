@@ -1,12 +1,11 @@
 import { useEffect, useState } from 'react'
-import { ArrowDownLeft, ArrowUpRight, X, Check } from 'lucide-react'
+import { X, Check } from 'lucide-react'
 import { categoriesFor } from '../utils/categories'
 import { useCategories } from '../context/CategoriesContext'
 import { formatRupiah, todayISO } from '../utils/format'
 
 function blankForm() {
   return {
-    type: 'expense',
     amount: '',
     category: categoriesFor('expense')[0].id,
     note: '',
@@ -15,7 +14,7 @@ function blankForm() {
 }
 
 /**
- * Modal form untuk menambah / mengubah transaksi (bagian dari CRUD).
+ * Modal form untuk menambah / mengubah pengeluaran (bagian dari CRUD).
  */
 export default function TransactionModal({ open, initial, onClose, onSubmit }) {
   const { allFor } = useCategories()
@@ -26,7 +25,6 @@ export default function TransactionModal({ open, initial, onClose, onSubmit }) {
     if (!open) return
     if (initial) {
       setForm({
-        type: initial.type,
         amount: String(initial.amount ?? ''),
         category: initial.category,
         note: initial.note || '',
@@ -40,16 +38,7 @@ export default function TransactionModal({ open, initial, onClose, onSubmit }) {
 
   if (!open) return null
 
-  const categories = allFor(form.type)
-
-  const switchType = (type) => {
-    const nextCats = allFor(type)
-    setForm((f) => ({
-      ...f,
-      type,
-      category: nextCats.some((c) => c.id === f.category) ? f.category : nextCats[0].id,
-    }))
-  }
+  const categories = allFor('expense')
 
   const handleSubmit = (e) => {
     e.preventDefault()
@@ -63,7 +52,7 @@ export default function TransactionModal({ open, initial, onClose, onSubmit }) {
       return
     }
     onSubmit({
-      type: form.type,
+      type: 'expense',
       amount,
       category: form.category,
       note: form.note,
@@ -77,34 +66,19 @@ export default function TransactionModal({ open, initial, onClose, onSubmit }) {
         className="modal"
         role="dialog"
         aria-modal="true"
-        aria-label={initial ? 'Ubah transaksi' : 'Tambah transaksi'}
+        aria-label={initial ? 'Ubah pengeluaran' : 'Catat pengeluaran'}
         onClick={(e) => e.stopPropagation()}
       >
         <div className="modal-head">
-          <h3 className="modal-title">{initial ? 'Ubah transaksi' : 'Catat transaksi'}</h3>
+          <h3 className="modal-title">
+            {initial ? 'Ubah pengeluaran' : 'Catat pengeluaran'}
+          </h3>
           <button type="button" className="icon-btn" onClick={onClose} aria-label="Tutup">
             <X size={18} />
           </button>
         </div>
 
         <form className="tx-form" onSubmit={handleSubmit}>
-          <div className="type-switch" role="group" aria-label="Jenis transaksi">
-            <button
-              type="button"
-              className={`type-switch-btn${form.type === 'expense' ? ' is-active is-expense' : ''}`}
-              onClick={() => switchType('expense')}
-            >
-              <ArrowUpRight size={16} /> Pengeluaran
-            </button>
-            <button
-              type="button"
-              className={`type-switch-btn${form.type === 'income' ? ' is-active is-income' : ''}`}
-              onClick={() => switchType('income')}
-            >
-              <ArrowDownLeft size={16} /> Pemasukan
-            </button>
-          </div>
-
           <label className="field">
             <span className="field-label">Nominal</span>
             <div className="amount-input">
@@ -143,7 +117,7 @@ export default function TransactionModal({ open, initial, onClose, onSubmit }) {
             <span className="field-label">Catatan</span>
             <input
               type="text"
-              placeholder={form.type === 'income' ? 'mis. Uang saku bulanan' : 'mis. Makan siang kampus'}
+              placeholder="mis. Makan siang kampus"
               maxLength={80}
               value={form.note}
               onChange={(e) => setForm((f) => ({ ...f, note: e.target.value }))}

@@ -11,7 +11,7 @@ export default function Header({ tab, onNavigate }) {
           </span>
           <span className="brand-text">
             <strong>Dompetin</strong>
-            <small>keuangan rapi</small>
+            <small>catat pengeluaran</small>
           </span>
         </button>
 

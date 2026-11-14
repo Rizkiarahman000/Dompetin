@@ -315,10 +315,6 @@ button {
   background: rgba(255, 255, 255, 0.12);
 }
 
-.balance-chip--in {
-  color: #b9ffdd;
-}
-
 .balance-chip--out {
   color: #ffd0de;
 }
@@ -360,6 +356,11 @@ button {
   color: var(--expense);
 }
 
+.stat-ico--neutral {
+  background: #eef1ff;
+  color: #4c63d2;
+}
+
 .stat-card > div {
   display: flex;
   flex-direction: column;
@@ -374,6 +375,14 @@ button {
 .stat-card strong {
   font-size: 1.02rem;
   letter-spacing: -0.01em;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.stat-sub {
+  font-size: 0.72rem;
+  color: var(--muted);
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -505,10 +514,6 @@ button {
   font-weight: 700;
   white-space: nowrap;
   letter-spacing: -0.01em;
-}
-
-.tx-amount--income {
-  color: var(--income);
 }
 
 .tx-amount--expense {
@@ -667,6 +672,25 @@ button {
   width: 100%;
   font-size: 0.92rem;
   color: var(--ink);
+}
+
+.filter-select {
+  height: 46px;
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  padding: 0 12px;
+  background: var(--surface);
+  color: var(--ink);
+  font-size: 0.88rem;
+  font-weight: 500;
+  box-shadow: var(--shadow-sm);
+  cursor: pointer;
+  min-width: 170px;
+}
+
+.filter-select:focus {
+  outline: 2px solid var(--brand-2);
+  outline-offset: 2px;
 }
 
 .segmented {
@@ -1013,44 +1037,6 @@ button {
   display: flex;
   flex-direction: column;
   gap: 14px;
-}
-
-.type-switch {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 6px;
-  background: var(--surface-2);
-  border: 1px solid var(--line);
-  border-radius: 14px;
-  padding: 5px;
-}
-
-.type-switch-btn {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  gap: 6px;
-  border: 0;
-  background: none;
-  color: var(--muted);
-  font-weight: 600;
-  font-size: 0.86rem;
-  padding: 9px;
-  border-radius: 10px;
-  cursor: pointer;
-}
-
-.type-switch-btn.is-active {
-  background: #fff;
-  box-shadow: var(--shadow-sm);
-}
-
-.type-switch-btn.is-expense {
-  color: var(--expense);
-}
-
-.type-switch-btn.is-income {
-  color: var(--income);
 }
 
 .field {
@@ -1423,25 +1409,6 @@ button {
 .cat-actions {
   display: flex;
   gap: 2px;
-}
-
-.cat-type-static {
-  display: inline-flex;
-  align-self: flex-start;
-  font-size: 0.82rem;
-  font-weight: 600;
-  padding: 6px 12px;
-  border-radius: 999px;
-  background: var(--surface-2);
-  border: 1px solid var(--line);
-}
-
-.cat-type-static.is-expense {
-  color: var(--expense);
-}
-
-.cat-type-static.is-income {
-  color: var(--income);
 }
 
 .icon-picker {

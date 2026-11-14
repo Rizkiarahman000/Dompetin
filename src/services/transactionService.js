@@ -19,7 +19,7 @@ function normalize(row) {
 function toPayload(t) {
   return {
     id: t.id,
-    type: t.type,
+    type: 'expense',
     amount: Math.abs(Number(t.amount) || 0),
     category: t.category,
     note: (t.note || '').trim(),
@@ -29,7 +29,9 @@ function toPayload(t) {
 
 class TransactionService {
   async list() {
-    const { data } = await apiClient.get('/transactions?select=*&order=date.desc,created_at.desc')
+    const { data } = await apiClient.get(
+      '/transactions?select=*&type=eq.expense&order=date.desc,created_at.desc',
+    )
     return (Array.isArray(data) ? data : []).map(normalize)
   }
 

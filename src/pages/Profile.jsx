@@ -4,7 +4,7 @@ import {
   IdCard,
   Users,
   Wallet,
-  Database,
+  CalendarDays,
   Trash2,
   Smartphone,
   WifiOff,
@@ -21,7 +21,6 @@ import { formatRupiah } from '../utils/format'
 export default function Profile({ stats, online = true, onReset, notify }) {
   const { addCategory, updateCategory, removeCategory, allFor } = useCategories()
   const [confirmReset, setConfirmReset] = useState(false)
-  const [catType, setCatType] = useState('expense')
   const [catEditor, setCatEditor] = useState(null)
   const [catToDelete, setCatToDelete] = useState(null)
 
@@ -36,8 +35,7 @@ export default function Profile({ stats, online = true, onReset, notify }) {
       updateCategory(catEditor.initial.id, data)
       notify('Kategori diperbarui.')
     } else {
-      addCategory(data)
-      setCatType(data.type)
+      addCategory({ ...data, type: 'expense' })
       notify('Kategori ditambahkan.')
     }
     setCatEditor(null)
@@ -55,7 +53,7 @@ export default function Profile({ stats, online = true, onReset, notify }) {
       <section className="page-head">
         <div>
           <h1 className="page-title">Profil</h1>
-          <p className="page-sub">Identitas pemilik dompet & pengaturan aplikasi.</p>
+          <p className="page-sub">Identitas pemilik & pengaturan aplikasi.</p>
           <span className={`conn-chip ${online ? 'is-online' : 'is-offline'}`}>
             <span className="conn-dot" />
             {online ? 'Terhubung ke Supabase' : 'Mode offline — data lokal'}
@@ -109,15 +107,15 @@ export default function Profile({ stats, online = true, onReset, notify }) {
           <ul className="info-list">
             <li>
               <span>
-                <Wallet size={16} /> Saldo
+                <Wallet size={16} /> Total pengeluaran
               </span>
-              <strong>{formatRupiah(stats.balance)}</strong>
+              <strong>{formatRupiah(stats.expense)}</strong>
             </li>
             <li>
               <span>
-                <Database size={16} /> Total transaksi
+                <CalendarDays size={16} /> Bulan ini
               </span>
-              <strong>{stats.count}</strong>
+              <strong>{formatRupiah(stats.monthExpense)}</strong>
             </li>
           </ul>
         </section>
@@ -125,8 +123,8 @@ export default function Profile({ stats, online = true, onReset, notify }) {
         <section className="panel">
           <h2 className="panel-title">Tentang aplikasi</h2>
           <p className="muted">
-            <strong>Dompetin v1.0.0</strong> — PWA pencatatan keuangan yang bisa dipasang dan
-            dipakai offline.
+            <strong>Dompetin v1.0.0</strong> — PWA pencatatan pengeluaran yang bisa dipasang
+            dan dipakai offline.
           </p>
           <ul className="tag-list">
             <li>React 19</li>
@@ -141,7 +139,7 @@ export default function Profile({ stats, online = true, onReset, notify }) {
       <section className="panel">
         <div className="panel-head">
           <h2 className="panel-title">
-            <Tags size={16} /> Kategori transaksi
+            <Tags size={16} /> Kategori pengeluaran
           </h2>
           <button
             type="button"
@@ -155,24 +153,8 @@ export default function Profile({ stats, online = true, onReset, notify }) {
           Kategori bawaan tidak bisa diubah. Kategori buatanmu bisa ditambah, diedit, dan
           dihapus.
         </p>
-        <div className="segmented" style={{ marginBottom: 12 }}>
-          <button
-            type="button"
-            className={`segmented-item${catType === 'expense' ? ' is-active' : ''}`}
-            onClick={() => setCatType('expense')}
-          >
-            Pengeluaran
-          </button>
-          <button
-            type="button"
-            className={`segmented-item${catType === 'income' ? ' is-active' : ''}`}
-            onClick={() => setCatType('income')}
-          >
-            Pemasukan
-          </button>
-        </div>
         <ul className="cat-list">
-          {allFor(catType).map((c) => (
+          {allFor('expense').map((c) => (
             <li key={c.id} className="cat-item">
               <span className="cat-ico" style={{ '--cat': c.color }}>
                 <CategoryIcon name={c.icon} size={16} />
@@ -252,7 +234,6 @@ export default function Profile({ stats, online = true, onReset, notify }) {
       <CategoryModal
         open={Boolean(catEditor)}
         initial={catEditor?.initial || null}
-        type={catType}
         onClose={() => setCatEditor(null)}
         onSubmit={handleSubmitCategory}
       />
