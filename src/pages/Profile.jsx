@@ -194,9 +194,13 @@ export default function Profile({ stats, online = true, onReset, notify }) {
           <Smartphone size={16} /> Pasang ke perangkat
         </h2>
         <ol className="steps">
-          <li>Buka aplikasi ini di browser (Chrome, Edge, atau Safari).</li>
           <li>
-            Pilih menu <strong>Install</strong> / <strong>Tambahkan ke Layar Utama</strong>.
+            <strong>Android/desktop:</strong> buka di Chrome/Edge, lalu pilih{' '}
+            <strong>Install</strong> / <strong>Pasang aplikasi</strong>.
+          </li>
+          <li>
+            <strong>iPhone/iPad:</strong> buka di <strong>Safari</strong>, ketuk ikon{' '}
+            <strong>Bagikan</strong> → <strong>Tambahkan ke Layar Utama</strong>.
           </li>
           <li>
             Setelah terpasang, Dompetin tampil seperti aplikasi biasa — bisa dibuka bahkan

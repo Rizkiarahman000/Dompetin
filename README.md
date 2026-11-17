@@ -29,7 +29,9 @@ vite-plugin-pwa + Supabase**.
 - **Database Supabase** — tabel `public.transactions` (khusus `expense`) dan
   `public.categories`, diakses lewat PostgREST (axios) seperti modul 5.
 - **PWA**:
-  - Dapat di-*install* (manifest + ikon 192/512 + `beforeinstallprompt`).
+  - Dapat di-*install* di Android/desktop (manifest + ikon 192/512 + `beforeinstallprompt`).
+  - **iOS/iPadOS**: instal lewat **Safari → Bagikan → Tambahkan ke Layar Utama**
+    (iOS tidak mendukung `beforeinstallprompt`; aplikasi menampilkan petunjuk khusus iOS).
   - **Bekerja offline** — service worker (Workbox) mem-precache app shell; data
     terakhir di-cache di `localStorage`, dan perubahan saat offline masuk **antrean
     sinkronisasi** yang dikirim otomatis ketika kembali online.
