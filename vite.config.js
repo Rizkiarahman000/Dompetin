@@ -7,7 +7,10 @@ export default defineConfig({
   plugins: [
     react(),
     VitePWA({
-      registerType: 'autoUpdate',
+      // 'prompt' membuat service worker baru menunggu sampai user menekan
+      // tombol "Perbarui sekarang" di halaman Profil (tanpa uninstall).
+      registerType: 'prompt',
+      injectRegister: null,
       devOptions: { enabled: true },
       includeAssets: ['icon.svg', 'icon-192.png', 'icon-512.png'],
       manifest: {
@@ -37,8 +40,6 @@ export default defineConfig({
       workbox: {
         globPatterns: ['**/*.{js,css,html,svg,png,ico,webmanifest}'],
         cleanupOutdatedCaches: true,
-        clientsClaim: true,
-        skipWaiting: true,
         navigateFallback: 'index.html',
       },
     }),

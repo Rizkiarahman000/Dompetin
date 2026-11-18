@@ -11,18 +11,67 @@ import {
   Tags,
   Plus,
   Pencil,
+  RefreshCw,
+  DownloadCloud,
+  Loader,
+  CheckCircle2,
 } from 'lucide-react'
 import ConfirmModal from '../components/ConfirmModal'
 import CategoryModal from '../components/CategoryModal'
 import CategoryIcon from '../components/CategoryIcon'
 import { useCategories } from '../context/CategoriesContext'
+import { useUpdate } from '../context/UpdateContext'
 import { formatRupiah } from '../utils/format'
 
 export default function Profile({ stats, online = true, onReset, notify }) {
   const { addCategory, updateCategory, removeCategory, allFor } = useCategories()
+  const {
+    needRefresh,
+    offlineReady,
+    updateServiceWorker,
+    checkForUpdate,
+    isSupported,
+  } = useUpdate()
   const [confirmReset, setConfirmReset] = useState(false)
   const [catEditor, setCatEditor] = useState(null)
   const [catToDelete, setCatToDelete] = useState(null)
+  const [checkingUpdate, setCheckingUpdate] = useState(false)
+
+  const handleUpdate = async () => {
+    if (needRefresh) {
+      const reg = await navigator.serviceWorker.getRegistration()
+      if (reg?.waiting) {
+        // Service worker baru menunggu → aktifkan lalu reload.
+        updateServiceWorker(true)
+      } else if (reg?.installing) {
+        // Tunggu instalasi selesai, lalu aktifkan / reload.
+        await new Promise((resolve) => {
+          const worker = reg.installing
+          worker.addEventListener('statechange', () => {
+            if (worker.state === 'installed' || worker.state === 'redundant') resolve()
+          })
+        })
+        if (reg.waiting) updateServiceWorker(true)
+        else window.location.reload()
+      } else {
+        // Versi baru sudah aktif, cukup reload untuk memuat aset terbaru.
+        window.location.reload()
+      }
+      return
+    }
+    setCheckingUpdate(true)
+    const result = await checkForUpdate()
+    setCheckingUpdate(false)
+    if (!result.ok) {
+      notify(
+        result.reason === 'unsupported'
+          ? 'Browser ini tidak mendukung pembaruan aplikasi.'
+          : 'Gagal memeriksa pembaruan. Coba lagi saat online.',
+      )
+    } else {
+      notify('Pemeriksaan selesai.')
+    }
+  }
 
   const handleReset = () => {
     onReset()
@@ -211,6 +260,46 @@ export default function Profile({ stats, online = true, onReset, notify }) {
           <WifiOff size={14} /> Data disinkronkan ke Supabase, dengan salinan cache lokal
           sehingga aplikasi tetap bisa dibuka dan diubah meski tanpa internet.
         </p>
+      </section>
+
+      <section className="panel">
+        <h2 className="panel-title">
+          <RefreshCw size={16} /> Pembaruan aplikasi
+        </h2>
+        <p className="muted">
+          {needRefresh
+            ? 'Versi baru Dompetin tersedia. Perbarui langsung tanpa menghapus aplikasi.'
+            : isSupported
+              ? 'Cek pembaruan untuk memastikan kamu memakai versi terbaru.'
+              : 'Browser ini tidak mendukung pembaruan aplikasi.'}
+        </p>
+        <div className="update-actions">
+          <button
+            type="button"
+            className={`btn ${needRefresh ? 'btn--primary' : 'btn--outline'}`}
+            onClick={handleUpdate}
+            disabled={checkingUpdate || !isSupported}
+          >
+            {checkingUpdate ? (
+              <>
+                <Loader size={16} className="spin" /> Memeriksa…
+              </>
+            ) : needRefresh ? (
+              <>
+                <DownloadCloud size={16} /> Perbarui sekarang
+              </>
+            ) : (
+              <>
+                <RefreshCw size={16} /> Cek pembaruan
+              </>
+            )}
+          </button>
+          {offlineReady && (
+            <span className="update-badge">
+              <CheckCircle2 size={14} /> Siap offline
+            </span>
+          )}
+        </div>
       </section>
 
       <section className="panel panel--danger">

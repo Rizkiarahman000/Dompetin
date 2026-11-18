@@ -32,6 +32,9 @@ vite-plugin-pwa + Supabase**.
   - Dapat di-*install* di Android/desktop (manifest + ikon 192/512 + `beforeinstallprompt`).
   - **iOS/iPadOS**: instal lewat **Safari → Bagikan → Tambahkan ke Layar Utama**
     (iOS tidak mendukung `beforeinstallprompt`; aplikasi menampilkan petunjuk khusus iOS).
+  - **Pembaruan manual** — di halaman Profil ada tombol **Cek pembaruan** yang berubah
+    menjadi **Perbarui sekarang** saat versi baru tersedia; update dipasang tanpa
+    menghapus/meng-install ulang aplikasi.
   - **Bekerja offline** — service worker (Workbox) mem-precache app shell; data
     terakhir di-cache di `localStorage`, dan perubahan saat offline masuk **antrean
     sinkronisasi** yang dikirim otomatis ketika kembali online.

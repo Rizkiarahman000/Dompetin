@@ -945,6 +945,26 @@ button {
   color: var(--muted);
 }
 
+.update-actions {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-top: 12px;
+}
+
+.update-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: var(--brand);
+  background: var(--brand-soft);
+  padding: 5px 10px;
+  border-radius: 999px;
+}
+
 .panel--danger {
   border-color: #f6cdda;
   background: linear-gradient(180deg, #fff, #fff7fa);
